@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Telegram Dice Game</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://telegram.org/js/telegram-web-app.js?167"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background-color: #f0f2f5;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      .balance {
+        font-size: 1.2em;
+        color: #2b8a3e;
+        margin-bottom: 20px;
+      }
+      .game-controls {
+        margin-top: 20px;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 5px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        background: #1971c2;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎲 Big/Small Game</h1>
+      <div id="user-info">Loading user information...</div>
+      <div class="balance">Balance: <span id="balance">-</span></div>
+
+      <div class="game-controls">
+        <select id="choice">
+          <option value="big">Big (11-17)</option>
+          <option value="small">Small (4-10)</option>
+        </select>
+        <input type="number" id="amount" placeholder="Amount" min="1" />
+        <button onclick="playGame()">Play</button>
+      </div>
+    </div>
+
+    <script>
+      const tg = window.Telegram.WebApp;
+      tg.expand();
+      tg.ready();
+
+      let userId = null;
+
+      // Initialize the app
+      function init() {
+        if (tg.initDataUnsafe.user) {
+          const user = tg.initDataUnsafe.user;
+          userId = user.id;
+          document.getElementById("user-info").innerHTML = `
+                    👤 User: ${user.first_name}${
+            user.last_name ? " " + user.last_name : ""
+          }
+                `;
+          fetchBalance();
+        } else {
+          document.getElementById("user-info").innerHTML =
+            "⚠️ Please open this app through Telegram";
+        }
+      }
+
+      // Fetch balance from server
+      async function fetchBalance() {
+        try {
+          const response = await fetch(`/balance/${userId}`);
+          const data = await response.json();
+          document.getElementById("balance").textContent = data.balance;
+        } catch (error) {
+          console.error("Balance fetch error:", error);
+        }
+      }
+
+      // Handle game play
+      function playGame() {
+        const choice = document.getElementById("choice").value;
+        const amount = parseInt(document.getElementById("amount").value);
+
+        if (!amount || amount < 1) {
+          alert("Please enter a valid amount");
+          return;
+        }
+
+        const data = {
+          choice: choice,
+          amount: amount,
+        };
+
+        tg.sendData(JSON.stringify(data));
+        tg.close();
+      }
+
+      // Initialize when Telegram is ready
+      tg.onEvent("viewportChanged", init);
+      init();
+    </script>
+  </body>
+</html>
